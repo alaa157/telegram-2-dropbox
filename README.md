@@ -54,6 +54,12 @@ Required values (see `.env.example`):
 | `ALLOWED_USER_IDS` | Comma-separated Telegram user IDs allowed to upload |
 | `SESSION_NAME` | Telethon session path (default `bot_session`, gitignored) |
 
+Credentials are intentionally not committed. Create a Telegram app at
+<https://my.telegram.org/apps> for `TELEGRAM_API_ID` / `TELEGRAM_API_HASH`, a
+bot with [@BotFather](https://t.me/BotFather) for `TELEGRAM_BOT_TOKEN`, and a
+Dropbox app with `files.content.write` access. Use Dropbox OAuth2 with
+`token_access_type=offline` and put the resulting refresh token in `.env`.
+
 If `ALLOWED_USER_IDS` is empty, the bot denies every upload and replies with
 the sender's user ID so you can add it. You can also send `/start` or `/id`
 to the bot at any time to get your Telegram user ID.

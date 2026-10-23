@@ -46,7 +46,11 @@ Keep these true unless the user explicitly asks to change the product:
 - **No overwrites.** Upload with `WriteMode.add` and `autorename=True` so
   duplicate names become `file (1).ext`.
 - **Secrets.** `.env`, `*.session`, tokens, app secrets, and refresh tokens
-  stay out of git. Update `.env.example` with placeholders only.
+  stay out of git. Update `.env.example` with placeholders only. Never print
+  these values in logs, shell output, commits, or chat reports.
+- **One process per bot token.** Stop the existing bot before starting another.
+  Concurrent MTProto clients for the same bot can duplicate updates and trigger
+  Telegram login rate limits.
 
 ## Setup
 
