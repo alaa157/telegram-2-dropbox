@@ -26,13 +26,16 @@ Keep these true unless the user explicitly asks to change the product:
   Dropbox. The only persistent files allowed are the Telethon session database
   (`SESSION_NAME`; `/data` in Docker), logs, and normal Python caches. Do not
   add temp files or directory spooling.
-- **Bounded memory.** Small files may be collected up to
-  `SMALL_FILE_THRESHOLD_MB` (default 8 MB). Larger files must use a bounded
-  buffer of one upload chunk (default 4 MB).
+- **Bounded memory.** Memory is bounded by one upload chunk plus the SDK's
+  immutable copy. `UPLOAD_CHUNK_SIZE_MB` is 4–148 MiB and must be a multiple of
+  4; the default is 4, and the current deployment intentionally uses 148.
+  `SMALL_FILE_THRESHOLD_MB` (default 8, max 150) controls when a single
+  `files_upload` is used. Higher chunk sizes trade memory for fewer round trips.
 - **Upload sessions for large files.** Above the threshold, use
   `files_upload_session_start`, `files_upload_session_append_v2`, and
   `files_upload_session_finish` with exact byte offsets. Keep chunks in the
-  4–16 MB range; Dropbox requires append chunks to be multiples of 4 MB.
+  4–148 MiB range; Dropbox caps a request at 150 MiB and requires non-final
+  chunks to be multiples of 4 MiB.
 - **Thread offload.** Run every blocking Dropbox SDK call through
   `asyncio.to_thread` (the uploader centralizes this in `_call`).
 - **Access control.** Only users in `ALLOWED_USER_IDS` may upload. Empty means

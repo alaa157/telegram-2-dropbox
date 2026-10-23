@@ -14,6 +14,10 @@ log = logging.getLogger(__name__)
 load_dotenv()
 
 MIB = 1024 * 1024
+# Dropbox caps a single upload request at 150 MiB. Non-final upload-session
+# chunks must be a multiple of 4 MiB, so 148 MiB is the largest safe chunk.
+MAX_UPLOAD_CHUNK_MIB = 148
+MAX_SMALL_FILE_MIB = 150
 
 
 def _env(name: str) -> str:
@@ -78,12 +82,18 @@ def load_settings() -> Settings:
         raise SystemExit("TELEGRAM_API_ID must be an integer") from exc
 
     upload_chunk = int(_env("UPLOAD_CHUNK_SIZE_MB") or 4) * MIB
-    if not 4 * MIB <= upload_chunk <= 16 * MIB:
-        raise SystemExit("UPLOAD_CHUNK_SIZE_MB must be between 4 and 16")
+    if not 4 * MIB <= upload_chunk <= MAX_UPLOAD_CHUNK_MIB * MIB:
+        raise SystemExit(
+            f"UPLOAD_CHUNK_SIZE_MB must be between 4 and {MAX_UPLOAD_CHUNK_MIB}"
+        )
+    if upload_chunk % (4 * MIB):
+        raise SystemExit("UPLOAD_CHUNK_SIZE_MB must be a multiple of 4")
 
     small_threshold = int(_env("SMALL_FILE_THRESHOLD_MB") or 8) * MIB
-    if small_threshold < MIB:
-        raise SystemExit("SMALL_FILE_THRESHOLD_MB must be at least 1")
+    if not MIB <= small_threshold <= MAX_SMALL_FILE_MIB * MIB:
+        raise SystemExit(
+            f"SMALL_FILE_THRESHOLD_MB must be between 1 and {MAX_SMALL_FILE_MIB}"
+        )
 
     path = _env("DROPBOX_PATH") or "/telegram_2_dropbox"
     if not path.startswith("/"):

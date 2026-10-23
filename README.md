@@ -17,11 +17,13 @@ operational pitfalls.
 - Receives any photo/document/video/audio message.
 - Checks the sender against `ALLOWED_USER_IDS`.
 - Downloads the file in chunks and uploads them immediately:
-  - files <= 8 MB: one `files_upload` call
+  - files up to `SMALL_FILE_THRESHOLD_MB`: one `files_upload` call
   - larger files: `files_upload_session_start` → `append_v2` → `finish`
-  - upload chunks are 4 MB by default (configurable 4–16 MB)
-  - large-file memory use is bounded at roughly 8 MB (one chunk plus the
-    immutable copy required by the Dropbox SDK)
+  - upload chunks are 4 MiB by default, configurable to 4–148 MiB in
+    multiples of 4 MiB
+  - large-file memory use is bounded at roughly 2× the configured chunk size
+    (one buffer plus the immutable copy required by the Dropbox SDK). The
+    default 4 MiB chunk uses about 8 MiB; a 148 MiB chunk uses about 296 MiB.
 - Dropbox SDK calls run in worker threads (`asyncio.to_thread`) so the
   Telethon event loop stays responsive.
 - Transient Dropbox errors (rate limits, 5xx, network) are retried with
@@ -53,6 +55,11 @@ Required values (see `.env.example`):
 | `DROPBOX_PATH` | Destination folder (default `/telegram_2_dropbox`) |
 | `ALLOWED_USER_IDS` | Comma-separated Telegram user IDs allowed to upload |
 | `SESSION_NAME` | Telethon session path (default `bot_session`, gitignored) |
+
+Optional tuning: `UPLOAD_CHUNK_SIZE_MB` (4–148, multiple of 4; default 4)
+controls Dropbox request size. Higher values reduce round trips and can improve
+throughput, at the cost of memory. `SMALL_FILE_THRESHOLD_MB` (default 8, max
+150) controls when a file is sent in one `files_upload` request.
 
 Credentials are intentionally not committed. Create a Telegram app at
 <https://my.telegram.org/apps> for `TELEGRAM_API_ID` / `TELEGRAM_API_HASH`, a

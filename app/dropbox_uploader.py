@@ -41,7 +41,9 @@ class DropboxUploader:
             app_key=settings.dropbox_app_key,
             app_secret=settings.dropbox_app_secret,
             oauth2_refresh_token=settings.dropbox_refresh_token,
-            timeout=120,
+            # Large upload-session chunks can take several minutes on a slow
+            # link. A short per-request timeout would abort them mid-transfer.
+            timeout=600,
         )
         self._chunk_size = settings.upload_chunk_size
         self._small_threshold = settings.small_file_threshold
