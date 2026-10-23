@@ -2,8 +2,13 @@
 
 A Telegram bot (Telethon / MTProto) that streams files straight into Dropbox.
 It does **not** use the Bot API `getFile` endpoint, so files up to **2 GB** are
-supported. Nothing is written to disk. Large files are streamed with a bounded
-buffer; only files up to the single-request threshold are held in memory.
+supported. File contents are never written to disk; only the Telethon session
+database is persisted. Large files are streamed with a bounded buffer; only
+files up to the single-request threshold are held in memory.
+
+If you are an AI coding agent, read [`AGENTS.md`](AGENTS.md) before changing
+code. It records the architecture invariants, verification commands, and
+operational pitfalls.
 
 ## How it works
 
@@ -64,8 +69,31 @@ docker run --env-file .env --restart unless-stopped \
 The `/data` volume keeps the Telethon session so restarts do not trigger a new
 bot login (Telegram rate-limits repeated logins).
 
+## Development
+
+Install the development tools and run the checks:
+
+```bash
+. .venv/bin/activate
+pip install -r requirements-dev.txt
+pytest -q
+ruff check .
+```
+
+The tests use fakes and never contact Telegram or Dropbox. Do not add tests that
+require real credentials to the default `pytest` run.
+
+Manual smoke test:
+
+1. Add your Telegram user ID to `ALLOWED_USER_IDS`.
+2. Start the bot and send `/start`; it should reply with your ID.
+3. Send a small file; verify the success reply and the Dropbox path.
+4. Send a file larger than 20 MB; the MTProto bot must handle it.
+
 ## Security
 
 - `.env`, `.env.*` and `*.session` are gitignored; `.env.example` contains only
   placeholders.
 - The repository history was reset to remove previously committed secrets.
+  Treat any secret that was ever committed as compromised and rotate it; old
+  unreachable objects may still be reachable by commit SHA on GitHub.
